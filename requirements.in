@@ -1,0 +1,9 @@
+git+https://github.com/Pycord-Development/pycord.git#egg=py-cord
+postbin
+pip-tools
+flake8
+black
+sentry-sdk
+requests-mock
+environs
+coverage
