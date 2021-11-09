@@ -1,3 +1,4 @@
+from discord.commands.permissions import Permission
 import sentry_sdk
 import discord
 import re
@@ -7,7 +8,14 @@ import math
 from discord.commands import Option
 
 
-from settings.default import SENTRY_ENABLED, SENTRY_URL, DISCORD_BOT_TOKEN, DISCORD_SERVER_IDS
+from settings.default import (
+    SENTRY_ENABLED,
+    SENTRY_URL,
+    DISCORD_BOT_TOKEN,
+    DISCORD_SERVER_ID,
+    DISCORD_ALLOWED_BAN_CONFIRM,
+    DISCORD_ALLOWED_BAN_QUERY,
+)
 
 if SENTRY_ENABLED:
     sentry_sdk.init(SENTRY_URL, traces_sample_rate=1.0)
@@ -16,6 +24,10 @@ intents = discord.Intents.default()
 intents.members = True
 
 bot = discord.Bot(intents=intents)
+
+
+def role_permission(roles):
+    return list(map(lambda r: Permission(r, 1, True, DISCORD_SERVER_ID), roles))
 
 
 @bot.event
@@ -27,7 +39,12 @@ async def on_ready():
 waiting_query = {}
 
 
-@bot.slash_command(guild_ids=DISCORD_SERVER_IDS, name="banregex")
+@bot.slash_command(
+    guild_ids=[DISCORD_SERVER_ID],
+    name="banregex",
+    permissions=role_permission(DISCORD_ALLOWED_BAN_QUERY),
+    default_permission=False,
+)
 async def regex_ban(
     ctx,
     pattern: Option(str, "Regex pattern"),
@@ -56,7 +73,7 @@ async def regex_ban(
         if waiting_query == {} or waiting_query["number"] != number:
             break
 
-    waiting_query = {"number": number, "suspects": suspects, "created": datetime.datetime.now()}
+    waiting_query = {"number": number, "suspects": suspects, "created": datetime.datetime.now(), "pattern": pattern}
 
     embed.set_footer(
         text=f"This query will affect {len(suspects)} users!\n\
@@ -73,7 +90,12 @@ async def regex_ban(
         await ctx.respond("> WARNING: This query affects more than 50% of the server!")
 
 
-@bot.slash_command(guild_ids=DISCORD_SERVER_IDS, name="confirmregex")
+@bot.slash_command(
+    guild_ids=[DISCORD_SERVER_ID],
+    name="confirmregex",
+    permissions=role_permission(DISCORD_ALLOWED_BAN_CONFIRM),
+    default_permission=False,
+)
 async def config_regex_ban(ctx, id: Option(int, "ID of regex query")):
     if waiting_query == {} or waiting_query["number"] != id:
         await ctx.respond("> The id you specified is not valid!")
@@ -82,8 +104,15 @@ async def config_regex_ban(ctx, id: Option(int, "ID of regex query")):
         await ctx.respond("> The given query is no longer valid (max 5 Minutes)")
         return
 
+    ban_message = (
+        f"Death by regex. `{waiting_query['pattern']}` {datetime.datetime.utcnow().strftime('%Y-%M-%d %H:%M:%S')} UTC"
+    )
+
     for user in waiting_query["suspects"]:
-        await user.ban(reason="Banned by automatic filter.", delete_message_days=0)
+        await user.ban(
+            reason=ban_message,
+            delete_message_days=0,
+        )
 
     await ctx.respond(f"> Banned {len(waiting_query['suspects'])} users!")
 
