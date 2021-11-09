@@ -1,4 +1,5 @@
 git+https://github.com/Pycord-Development/pycord.git#egg=py-cord
+git+https://github.com/Leek5/pycord-components.git#egg=pycord-components
 postbin
 pip-tools
 flake8

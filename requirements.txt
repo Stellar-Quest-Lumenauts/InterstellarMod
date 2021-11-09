@@ -5,7 +5,9 @@
 #    pip-compile
 #
 aiohttp==3.8.0
-    # via py-cord
+    # via
+    #   py-cord
+    #   pycord-components
 aiosignal==1.2.0
     # via aiohttp
 async-timeout==4.0.0
@@ -61,9 +63,13 @@ platformdirs==2.4.0
 postbin==1.2.0
     # via -r requirements.in
 git+https://github.com/Pycord-Development/pycord.git#egg=py-cord
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   pycord-components
 pycodestyle==2.8.0
     # via flake8
+git+https://github.com/Leek5/pycord-components.git#egg=pycord-components
+    # via -r requirements.in
 pyflakes==2.4.0
     # via flake8
 python-dotenv==0.19.1
